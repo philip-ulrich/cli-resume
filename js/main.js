@@ -49,12 +49,14 @@ function getPost(postID) {
 ///////////////
 var path = '~';                             // Default Path
 var termUser = 'guest';                     // Terminal User
-var termOwner = 'exec';
-var termGroup = 'nginx';
-//var pausePost = false;
+var termOwner = 'exec';                     // Terminal Owner
+var termGroup = 'nginx';                    // Terminal Group
+var dirPerms = 'drwxr-xr-x.';               // Folder Permissions
+var filePerms = '-rwxr--r--.';              // File Permissions
 var termHost = termUser + '@exec.tech';     // Terminal Hostname
-var termDir  = "drwxr-xr-x. " + termOwner + " " + termGroup + " {x} [[b;#0225c7;]";
-var termFile = "-rwxr--r--. " + termOwner + " " + termGroup + " {x} ";
+var dirColor = '[[b;#0225c7;]'
+var termDir  = dirPerms + " " + termOwner + " " + termGroup + " {x} " + dirColor;
+var termFile = filePerms + " " + termOwner + " " + termGroup + " {x} ";
 var title =     "+==================================================================================+\n" +
                 "|  _______  ___   ___  _______   ______    __________  _______   ______  __    __  |\n" +
                 "| |   ____| \\  \\ /  / |   ____| /      |  |          ||   ____| /      ||  |  |  | |\n" +
@@ -75,9 +77,20 @@ var subtitle =  "   ============================================================
                 " \\\\                                                                              //\n" +
                 "   ==============================================================================\n";
 var helpResp =  "Help Text";
-var lsHome   =  termDir + "blog]\n" +
+var lsHome   =  dirColor + "blog]" + "   license";
+var lsBlog   =  dirColor + "posts   tags]" + "   about";
+var lsHomeA  =  dirColor + ".extras   .ssh   blog]" + "   license";
+var lsBlogA  =  dirColor+ "posts   tags]" + "   about";
+var lsHomeL  =  termDir + "blog]\n" +
                 termFile + "license";
-var lsBlog   =  termDir + "posts]\n" +
+var lsBlogL  =  termDir + "posts]\n" +
+                termDir + "tags]\n" +
+                termFile + "about";
+var lsHomeAL =  termDir + ".extras]\n" +
+                termDir + ".ssh]\n" +
+                termDir + "blog]\n" +
+                termFile + "license";
+var lsBlogAL =  termDir + "posts]\n" +
                 termDir + "tags]\n" +
                 termFile + "about";
 
@@ -95,76 +108,133 @@ var processor = {
         this.echo(text);
     },
     // ls case
-    ls: function() {
-        if (path == '~') {
-            this.echo(format(lsHome,[latestPost().updated_at.substring(0,10),"2017-03-17"]));
-        }
-        if (path == 'blog') {
-            this.echo(format(lsBlog,[latestPost().updated_at.substring(0,10),"2017-03-17","2017-03-17"]));
-        }
-        if (path == 'posts') {
-            window.that = this;
-            window.posts = getPosts();
-            count = window.posts.length;
-            $.each(window.posts, function(index, value) {
-                window.that.echo(format(termFile,[value.updated_at.substring(0,10)]) + value.slug);
-            });
+    ls: function(options) {
+        if (typeof options === 'undefined') {
+            if (path == '~') {
+                this.echo(lsHome);
+            } else if (path == 'blog') {
+                this.echo(lsBlog);
+            } else if (path == 'posts') {
+                window.that = this;
+                window.posts = getPosts();
+                count = window.posts.length;
+                $.each(window.posts, function(index, value) {
+                    window.that.echo(value.slug + '   ');
+                });
+            } else {
+                this.echo('');
+            }
+        } else if (options == '-a') {
+            if (path == '~') {
+                this.echo(lsHomeA);
+            }
+            if (path == 'blog') {
+                this.echo(lsBlogA);
+            }
+            if (path == 'posts') {
+                window.that = this;
+                window.posts = getPosts();
+                count = window.posts.length;
+                $.each(window.posts, function(index, value) {
+                    window.that.echo(value.slug + '   ');
+                });
+            }
+        } else if (options == '-l') {
+            if (path == '~') {
+                this.echo(format(lsHomeL,[latestPost().updated_at.substring(0,10),'2017-03-17']));
+            }
+            if (path == 'blog') {
+                this.echo(format(lsBlogL,[latestPost().updated_at.substring(0,10),'2017-03-17','2017-03-17']));
+            }
+            if (path == 'posts') {
+                window.that = this;
+                window.posts = getPosts();
+                count = window.posts.length;
+                $.each(window.posts, function(index, value) {
+                    window.that.echo(format(termFile,[value.updated_at.substring(0,10)]) + value.slug);
+                });
+            }
+        } else if (options == '-al' || options == '-la') {
+            if (path == '~') {
+                this.echo(format(lsHomeAL,['2017-03-20','2017-03-20',latestPost().updated_at.substring(0,10),'2017-03-17']));
+            }
+            if (path == 'blog') {
+                this.echo(format(lsBlogAL,[latestPost().updated_at.substring(0,10),'2017-03-17','2017-03-17']));
+            }
+            if (path == 'posts') {
+                window.that = this;
+                window.posts = getPosts();
+                count = window.posts.length;
+                $.each(window.posts, function(index, value) {
+                    window.that.echo(format(termFile,[value.updated_at.substring(0,10)]) + value.slug);
+                });
+            }
         }
     },
     // cd case
     cd: function(folder) {
-        if (path == '~') {
-            if (folder == 'blog') {
-                path = 'blog';
-            } else {
-                this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
+        if (typeof folder !== 'undefined') {
+            if (path == '~') {
+                if (folder == 'blog') {
+                    path = 'blog';
+                } else {
+                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
+                }
             }
-        }
-        else if (path == 'blog') {
-            if (folder == 'posts') {
-                path = 'posts';
-            } else {
-                this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
+            else if (path == 'blog') {
+                if (folder == 'posts') {
+                    path = 'posts';
+                } else {
+                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
+                }
             }
+        } else {
+            this.echo("this shall be an error"); // TODO
         }
     },
      // cat case
     cat: function(file) {
-        /*if (path == '~') {
-            if (folder == 'blog') {
-                path = 'blog';
-            } else {
-                this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-            }
-        }
-        if (path == 'blog') {
-            if (folder == 'posts') {
-                path = 'posts';
-            } else {
-                this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-            }
-        }*/
-        if (path == 'posts') {
-            if (typeof window.posts === 'undefined') {
-                window.posts = getPosts();
-                console.log("pulling posts");
-            }
-            catFound = false;
-            $.each(window.posts, function(index, value) {
-                if (value.slug == file) {
-                    catFound = value.id;
+        if (typeof file !== 'undefined') {
+            /*if (path == '~') {
+                if (folder == 'blog') {
+                    path = 'blog';
+                } else {
+                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
                 }
-            });
-            if (catFound == false) {
-                this.echo("post not found");
+            }
+            if (path == 'blog') {
+                if (folder == 'posts') {
+                    path = 'posts';
+                } else {
+                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
+                }
+            }*/
+            if (path == 'posts') {
+                if (typeof window.posts === 'undefined') {
+                    window.posts = getPosts();
+                    console.log("pulling posts");
+                }
+                catFound = false;
+                $.each(window.posts, function(index, value) {
+                    if (value.slug == file) {
+                        catFound = value.id;
+                    }
+                });
+                if (catFound == false) {
+                    this.echo("post not found");
+                } else {
+                    //pausePost = true;
+                    this.clear();
+                    this.pause();
+                    this.echo(getPost(catFound).html,{raw:true});
+                    setTimeout(function() {
+                        window.scrollTo(0,0);
+                    }, (100));
+                }
             } else {
-                //pausePost = true;
-                this.clear();
-                this.pause();
-                this.echo(getPost(catFound).html,{raw:true});
-                setTimeout(function() {
-                    window.scrollTo(0,0);
-                }, (100));
+                // This could be the way cat actually works..
+                // but lets just display an error for now
+                this.echo("this shall be an error"); // TODO
             }
         }
     },
@@ -191,16 +261,6 @@ jQuery(document).ready(function($) {
         completion: true,
         checkArity: false,
         convertLinks: false,
-        /*keydown: function(e, term) {
-            if (pausePost) {
-                if (e.which == 68 && e.ctrlKey) { // CTRL+D
-                    //this.clear();
-                    this.resume();
-                    //pausePost = false;
-                }
-                return false;
-            }
-        },*/
         onBlur: function() {
             return false;
         }
