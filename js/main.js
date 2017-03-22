@@ -23,7 +23,7 @@ function latestPost() {
     $.get(ghost.url.api('posts', {limit: 1})).done(function (data){
         window.postData = data.posts[0];
     }).fail(function (err){
-        console.log(err);
+        return false;
     });
     return window.postData;
 }
@@ -31,15 +31,31 @@ function getPosts() {
     $.get(ghost.url.api('posts', {limit: 'all'})).done(function (data){
         window.posts = data.posts;
     }).fail(function (err){
-        console.log(err);
+        return false;
     });
     return window.posts;
 }
-function getPost(postID) {
-    $.get(ghost.url.api('posts/' + postID, {limit: '1'})).done(function (data){
+function getPost(postSlug) {
+    $.get(ghost.url.api('posts/slug/' + postSlug, {limit: '1'})).done(function (data){
         window.post = data.posts[0];
     }).fail(function (err){
-        console.log(err);
+        return false;
+    });
+    return window.post;
+}
+function getTags() {
+    $.get(ghost.url.api('tags', {limit: 'all'})).done(function (data){
+        window.posts = data.posts;
+    }).fail(function (err){
+        return false;
+    });
+    return window.posts;
+}
+function getTag(tagSlug) {
+    $.get(ghost.url.api('posts/slug/' + tagSlug, {limit: '1'})).done(function (data){
+        window.post = data.posts[0];
+    }).fail(function (err){
+        return false;
     });
     return window.post;
 }
@@ -47,17 +63,17 @@ function getPost(postID) {
 ///////////////
 // Variables //
 ///////////////
-var path = '~';                             // Default Path
+var path     = '~';                         // Default Path
 var termUser = 'guest';                     // Terminal User
-var termOwner = 'exec';                     // Terminal Owner
-var termGroup = 'nginx';                    // Terminal Group
+var termOwner= 'exec';                      // Terminal Owner
+var termGroup= 'nginx';                     // Terminal Group
 var dirPerms = 'drwxr-xr-x.';               // Folder Permissions
-var filePerms = '-rwxr--r--.';              // File Permissions
+var filePerms= '-rwxr--r--.';               // File Permissions
 var termHost = termUser + '@exec.tech';     // Terminal Hostname
 var dirColor = '[[b;#0225c7;]'
 var termDir  = dirPerms + " " + termOwner + " " + termGroup + " {x} " + dirColor;
 var termFile = filePerms + " " + termOwner + " " + termGroup + " {x} ";
-var title =     "+==================================================================================+\n" +
+var title    =    "+==================================================================================+\n" +
                 "|  _______  ___   ___  _______   ______    __________  _______   ______  __    __  |\n" +
                 "| |   ____| \\  \\ /  / |   ____| /      |  |          ||   ____| /      ||  |  |  | |\n" +
                 "| |  |__     \\  V  /  |  |__   |  ,----'  `---|  |---`|  |__   |  ,----'|  |__|  | |\n" +
@@ -76,6 +92,12 @@ var subtitle =  "   ============================================================
                 "||    type 'help' to get a list of commands or begin navigating by typing 'ls'    ||\n" +
                 " \\\\                                                                              //\n" +
                 "   ==============================================================================\n";
+var fileStruc=  {
+                    ".extras"   :   { "key" : "value" },
+                    ".ssh"      :   { "key" : "value" },
+                    "blog"      :   { "key" : "value" },
+                    "license"   :     "file"
+                }
 var helpResp =  "Help Text";
 var lsHome   =  dirColor + "blog]" + "   license";
 var lsBlog   =  dirColor + "posts   tags]" + "   about";
@@ -210,23 +232,13 @@ var processor = {
                 }
             }*/
             if (path == 'posts') {
-                if (typeof window.posts === 'undefined') {
-                    window.posts = getPosts();
-                    console.log("pulling posts");
-                }
-                catFound = false;
-                $.each(window.posts, function(index, value) {
-                    if (value.slug == file) {
-                        catFound = value.id;
-                    }
-                });
-                if (catFound == false) {
+                post = getPost(file);
+                if (post == false) {
                     this.echo("post not found");
                 } else {
-                    //pausePost = true;
                     this.clear();
                     this.pause();
-                    this.echo(getPost(catFound).html,{raw:true});
+                    this.echo(post.html,{raw:true});
                     setTimeout(function() {
                         window.scrollTo(0,0);
                     }, (100));
