@@ -59,6 +59,13 @@ function getTag(tagSlug) {
     });
     return window.post;
 }
+function isDefined(variable) {
+    if (typeof variable !== 'undefined') {
+        return '| ' + variable;
+    } else {
+        return " ";
+    }
+}
 
 ///////////////
 // Variables //
@@ -73,7 +80,8 @@ var termHost = termUser + '@exec.tech';     // Terminal Hostname
 var dirColor = '[[b;#0225c7;]'
 var termDir  = dirPerms + " " + termOwner + " " + termGroup + " {x} " + dirColor;
 var termFile = filePerms + " " + termOwner + " " + termGroup + " {x} ";
-var title    =    "+==================================================================================+\n" +
+var title    =  "// This site is currently under construction. Don't mind the mess.\n\n\n" +
+                "+==================================================================================+\n" +
                 "|  _______  ___   ___  _______   ______    __________  _______   ______  __    __  |\n" +
                 "| |   ____| \\  \\ /  / |   ____| /      |  |          ||   ____| /      ||  |  |  | |\n" +
                 "| |  |__     \\  V  /  |  |__   |  ,----'  `---|  |---`|  |__   |  ,----'|  |__|  | |\n" +
@@ -124,10 +132,16 @@ var processor = {
     // help case
     help: function() {
         this.echo(helpResp);
+        ga('send', 'event', 'help', path);
     },
     // echo case
     echo: function(text) {
-        this.echo(text);
+        if (typeof text !== 'undefined') {
+            this.echo(text);
+        } else {
+            this.echo(""); //TODO
+        }
+        ga('send', 'event', 'echo', path + ' ' + isDefined(text));
     },
     // ls case
     ls: function(options) {
@@ -192,6 +206,7 @@ var processor = {
                 });
             }
         }
+        ga('send', 'event', 'ls', path + ' ' + isDefined(options));
     },
     // cd case
     cd: function(folder) {
@@ -213,6 +228,7 @@ var processor = {
         } else {
             this.echo("this shall be an error"); // TODO
         }
+        ga('send', 'event', 'cd', path + ' ' + isDefined(folder));
     },
      // cat case
     cat: function(file) {
@@ -249,13 +265,15 @@ var processor = {
                 this.echo("this shall be an error"); // TODO
             }
         }
+        ga('send', 'event', 'cat', path + ' ' + isDefined(file));
     },
     // resume case
-    resume: function(text) {
+    resume: function() {
         term.echo('You will now be directed to my resume. Please wait...')
         setTimeout(function() {
             window.location = "https://resume.exec.tech";
         }, (3 * 1000));
+        ga('send', 'event', 'resume', path);
     }
 }
 jQuery(document).ready(function($) {
