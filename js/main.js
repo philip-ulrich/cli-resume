@@ -20,44 +20,39 @@ function blankLine(num) {
     return "\n".repeat(num);
 }
 function latestPost() {
-    $.get(ghost.url.api('posts', {limit: 1})).done(function (data){
-        window.postData = data.posts[0];
+    return $.get(ghost.url.api('posts', {limit: 1})).done(function (data){
+        return data.posts;
     }).fail(function (err){
         return false;
     });
-    return window.postData;
 }
 function getPosts() {
-    $.get(ghost.url.api('posts', {limit: 'all'})).done(function (data){
-        window.posts = data.posts;
+    return $.get(ghost.url.api('posts', {limit: 'all'})).success(function (data){
+        return data.posts;
     }).fail(function (err){
         return false;
     });
-    return window.posts;
 }
 function getPost(postSlug) {
-    $.get(ghost.url.api('posts/slug/' + postSlug, {limit: '1'})).done(function (data){
-        window.post = data.posts[0];
+    return $.get(ghost.url.api('posts/slug/' + postSlug, {limit: '1'})).success(function (data){
+        return data.posts;
     }).fail(function (err){
         return false;
     });
-    return window.post;
 }
 function getTags() {
-    $.get(ghost.url.api('tags', {limit: 'all'})).done(function (data){
-        window.posts = data.posts;
+    return $.get(ghost.url.api('tags', {limit: 'all'})).success(function (data){
+        return data.tags;
     }).fail(function (err){
         return false;
     });
-    return window.posts;
 }
 function getTag(tagSlug) {
-    $.get(ghost.url.api('posts/slug/' + tagSlug, {limit: '1'})).done(function (data){
-        window.post = data.posts[0];
+    return $.get(ghost.url.api('posts/slug/' + tagSlug, {limit: '1'})).success(function (data){
+        return data.tags;
     }).fail(function (err){
         return false;
     });
-    return window.post;
 }
 function isDefined(variable) {
     if (typeof variable !== 'undefined') {
@@ -66,6 +61,141 @@ function isDefined(variable) {
         return " ";
     }
 }
+
+// JSON Searching Functions courtesy of:
+// https://gist.github.com/iwek/3924925/
+function getObjects(obj, key, val) {
+    var objects = [];
+    for (var i in obj) {
+        if (!obj.hasOwnProperty(i)) continue;
+        if (typeof obj[i] == 'object') {
+            objects = objects.concat(getObjects(obj[i], key, val));
+        } else
+        if (i == key && obj[i] == val || i == key && val == '') { //
+            objects.push(obj);
+        } else if (obj[i] == val && key == ''){
+            if (objects.lastIndexOf(obj) == -1){
+                objects.push(obj);
+            }
+        }
+    }
+    return objects;
+}
+function getValues(obj, key) {
+    var objects = [];
+    for (var i in obj) {
+        if (!obj.hasOwnProperty(i)) continue;
+        if (typeof obj[i] == 'object') {
+            objects = objects.concat(getValues(obj[i], key));
+        } else if (i == key) {
+            objects.push(obj[i]);
+        }
+    }
+    return objects;
+}
+function getKeys(obj, val) {
+    var objects = [];
+    for (var i in obj) {
+        if (!obj.hasOwnProperty(i)) continue;
+        if (typeof obj[i] == 'object') {
+            objects = objects.concat(getKeys(obj[i], val));
+        } else if (obj[i] == val) {
+            objects.push(i);
+        }
+    }
+    return objects;
+}
+// Filesystem Structure
+latestPost().success(function (data) {
+    window.latestPostDate = data['posts'][0]['updated_at'].substring(0,10);
+    window.fileStructure =
+    [
+        {
+            "name": "~",
+            "date": "2017-03-24",
+            "type": "static",
+            "children":   [
+                            {
+                                "name": ".extras",
+                                "date": "2017-03-24",
+                                "type": "static",
+                                "children":   [
+                                                {
+                                                    "name": "example-file1",
+                                                    "date": "2017-03-24",
+                                                    "type": "file"
+                                                },
+                                                {
+                                                    "name": "example-file2",
+                                                    "date": "2017-03-24",
+                                                    "type": "file"
+                                                }
+                                            ]
+                            },
+                            {
+                                "name": ".ssh",
+                                "date": "2017-03-24",
+                                "type": "static",
+                                "children":   [
+                                                {
+                                                    "name": "example-file3",
+                                                    "date": "2017-03-24",
+                                                    "type": "file"
+                                                },
+                                                {
+                                                    "name": "example-file4",
+                                                    "date": "2017-03-24",
+                                                    "type": "file"
+                                                }
+                                            ]
+                            },
+                            {
+                                "name": "blog",
+                                "date": window.latestPostDate,
+                                "type": "static",
+                                "children":   [
+                                                {
+                                                    "name": "posts",
+                                                    "date": window.latestPostDate,
+                                                    "type": "dynamic",
+                                                    "children":     [
+                                                                        {
+                                                                            "name": "blog-post",
+                                                                            "date": "",
+                                                                            "type": "blog-post"
+                                                                        }
+                                                                    ]
+                                                },
+                                                {
+                                                    "name": "tags",
+                                                    "date": window.latestPostDate,
+                                                    "type": "dynamic",
+                                                    "children":     [
+                                                                        {
+                                                                            "name": "blog-tag",
+                                                                            "date": "",
+                                                                            "type": "blog-tag"
+                                                                        }
+                                                                    ]
+                                                },
+                                                {
+                                                    "name": "about",
+                                                    "date": "2017-03-24",
+                                                    "type": "file",
+                                                    "content": "fill in"
+                                                }
+                                            ]
+                            },
+                            {
+                                "name": "credits",
+                                "date": "2017-03-24",
+                                "type": "file",
+                                "content": "// Site content and functions by Philip Ulrich \n// JQuery Terminal interface by Jakub Jankiewicz [[!;;]http://terminal.jcubic.pl]\n// Blog software by Ghost [[!;;]https://ghost.org]"
+                            }
+                        ]
+        }
+    ]
+});
 
 ///////////////
 // Variables //
@@ -100,34 +230,13 @@ var subtitle =  "   ============================================================
                 "||    type 'help' to get a list of commands or begin navigating by typing 'ls'    ||\n" +
                 " \\\\                                                                              //\n" +
                 "   ==============================================================================\n";
-var fileStruc=  {
-                    ".extras"   :   { "key" : "value" },
-                    ".ssh"      :   { "key" : "value" },
-                    "blog"      :   { "key" : "value" },
-                    "license"   :     "file"
-                }
 var helpResp =  "Help Text";
-var lsHome   =  dirColor + "blog]" + "   license";
-var lsBlog   =  dirColor + "posts   tags]" + "   about";
-var lsHomeA  =  dirColor + ".extras   .ssh   blog]" + "   license";
-var lsBlogA  =  dirColor+ "posts   tags]" + "   about";
-var lsHomeL  =  termDir + "blog]\n" +
-                termFile + "license";
-var lsBlogL  =  termDir + "posts]\n" +
-                termDir + "tags]\n" +
-                termFile + "about";
-var lsHomeAL =  termDir + ".extras]\n" +
-                termDir + ".ssh]\n" +
-                termDir + "blog]\n" +
-                termFile + "license";
-var lsBlogAL =  termDir + "posts]\n" +
-                termDir + "tags]\n" +
-                termFile + "about";
+window.posts = getPosts();
+
 
 /////////////
 // Program //
 /////////////
-jQuery.ajaxSetup({async:false}); // we don't actually need async... it's okay, I promise
 var processor = {
     // help case
     help: function() {
@@ -145,67 +254,62 @@ var processor = {
     },
     // ls case
     ls: function(options) {
-        if (typeof options === 'undefined') {
-            if (path == '~') {
-                this.echo(lsHome);
-            } else if (path == 'blog') {
-                this.echo(lsBlog);
-            } else if (path == 'posts') {
-                window.that = this;
-                window.posts = getPosts();
-                count = window.posts.length;
-                $.each(window.posts, function(index, value) {
-                    window.that.echo(value.slug + '   ');
+        list      = '';
+        listItems = getObjects(window.fileStructure,'name', path)[0]['children'];
+        fileCount = listItems.length - 1;
+        if (typeof options === 'undefined' || options == '-l') {
+            listItems = listItems.filter(function (item) {
+               return item['name'].indexOf(".") !== 0;
+            });
+            fileCount = listItems.length - 1;
+        }
+        if (typeof options === 'undefined' || options == '-a') {
+            if (path == 'posts') {
+                window.posts.success(function (data) {
+                    $.each(data.posts, function(index, value) {
+                        list += value['slug'] + '   ';
+                    });
+                })
+            } else {
+                $.each(listItems, function(index, value) {
+                    if (getObjects(window.fileStructure, 'name', value['name'])[0]['type'] == 'file') {
+                        list += value['name'] + '   ';
+                    } else {
+                        list += dirColor + value['name'] + ']   ';
+                    }
+                })
+            }
+        } else if (options == '-l' || options == '-al' || options == '-la') {
+            if (path == 'posts') {
+                window.posts.success(function (data) {
+                    postCount = data['posts'].length - 1;
+                    $.each(data.posts, function(index, value) {
+                        if (postCount == index) {
+                            list += format(termFile,[value['updated_at'].substring(0,10)]) + value.slug;
+                        } else {
+                            list += format(termFile,[value['updated_at'].substring(0,10)]) + value.slug + '\n';
+                        }
+                    });
                 });
             } else {
-                this.echo('');
-            }
-        } else if (options == '-a') {
-            if (path == '~') {
-                this.echo(lsHomeA);
-            }
-            if (path == 'blog') {
-                this.echo(lsBlogA);
-            }
-            if (path == 'posts') {
-                window.that = this;
-                window.posts = getPosts();
-                count = window.posts.length;
-                $.each(window.posts, function(index, value) {
-                    window.that.echo(value.slug + '   ');
-                });
-            }
-        } else if (options == '-l') {
-            if (path == '~') {
-                this.echo(format(lsHomeL,[latestPost().updated_at.substring(0,10),'2017-03-17']));
-            }
-            if (path == 'blog') {
-                this.echo(format(lsBlogL,[latestPost().updated_at.substring(0,10),'2017-03-17','2017-03-17']));
-            }
-            if (path == 'posts') {
-                window.that = this;
-                window.posts = getPosts();
-                count = window.posts.length;
-                $.each(window.posts, function(index, value) {
-                    window.that.echo(format(termFile,[value.updated_at.substring(0,10)]) + value.slug);
-                });
-            }
-        } else if (options == '-al' || options == '-la') {
-            if (path == '~') {
-                this.echo(format(lsHomeAL,['2017-03-20','2017-03-20',latestPost().updated_at.substring(0,10),'2017-03-17']));
-            }
-            if (path == 'blog') {
-                this.echo(format(lsBlogAL,[latestPost().updated_at.substring(0,10),'2017-03-17','2017-03-17']));
-            }
-            if (path == 'posts') {
-                window.that = this;
-                window.posts = getPosts();
-                count = window.posts.length;
-                $.each(window.posts, function(index, value) {
-                    window.that.echo(format(termFile,[value.updated_at.substring(0,10)]) + value.slug);
-                });
+                $.each(listItems, function(index, value) {
+                    if (getObjects(window.fileStructure, 'name', value['name'])[0]['type'] == 'file') {
+                        if (fileCount == index) {
+                            list += format(termFile, [value['date']]) + value['name'];
+                        } else {
+                            list += format(termFile, [value['date']]) + value['name'] + '\n';
+                        }
+                    } else {
+                        if (fileCount == index) {
+                            list += format(termDir, [value['date']]) + value['name'] + ']';
+                        } else {
+                            list += format(termDir, [value['date']]) + value['name'] + ']' + '\n';
+                        }
+                    }
+                })
             }
         }
+        this.echo(list);
         ga('send', 'event', 'ls', path + ' ' + isDefined(options));
     },
     // cd case
@@ -296,3 +400,24 @@ jQuery(document).ready(function($) {
         }
     });
 });
+
+
+//example of grabbing objects that match some key and value in JSON
+//console.log(getObjects(js,'name','example-file3'));
+//returns file in 0 for content
+
+//example of grabbing objects that match some key in JSON
+//console.log(getObjects(js,'name',''));
+//returns all objects that have key in context
+
+//example of grabbing obejcts that match some value in JSON
+//console.log(getObjects(js,'','file'));
+//returns all objects that have value in context
+
+//example of grabbing values from any key passed in JSON
+//console.log(getValues(js,'name'));
+//returns all values for key in list
+
+//example of grabbing keys by searching via values in JSON
+//console.log(getKeys(js,'example-file2'));
+//returns key of value (likely not useful)
