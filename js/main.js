@@ -61,7 +61,6 @@ function isDefined(variable) {
         return " ";
     }
 }
-
 // JSON Searching Functions courtesy of:
 // https://gist.github.com/iwek/3924925/
 function getObjects(obj, key, val) {
@@ -195,7 +194,7 @@ latestPost().success(function (data) {
                         ]
         }
     ]
-});
+}); //TODO
 
 ///////////////
 // Variables //
@@ -230,20 +229,17 @@ var subtitle =  "   ============================================================
                 "||    type 'help' to get a list of commands or begin navigating by typing 'ls'    ||\n" +
                 " \\\\                                                                              //\n" +
                 "   ==============================================================================\n";
-var helpResp =  "Help Text";
+var helpText =  "Help Text"; //TODO
 window.posts = getPosts();
-
 
 /////////////
 // Program //
 /////////////
 var processor = {
-    // help case
     help: function() {
-        this.echo(helpResp);
+        this.echo(helpText);
         ga('send', 'event', 'help', path);
     },
-    // echo case
     echo: function(text) {
         if (typeof text !== 'undefined') {
             this.echo(text);
@@ -252,7 +248,6 @@ var processor = {
         }
         ga('send', 'event', 'echo', path + ' ' + isDefined(text));
     },
-    // ls case
     ls: function(options) {
         list      = '';
         listItems = getObjects(window.fileStructure,'name', path)[0]['children'];
@@ -308,11 +303,18 @@ var processor = {
                     }
                 })
             }
+        } else if (options == '--help') {
+            this.echo("usage: ls [-al]");
+            return;
+        } else {
+            this.echo("ls: invalid option -- " + options + "\n" +
+                      "Try 'ls --help' for more information");
+            return;
         }
         this.echo(list);
         ga('send', 'event', 'ls', path + ' ' + isDefined(options));
     },
-    // cd case
+/////   TODO \/   ///////////////////////////////////////////////////////////////////////////////
     cd: function(folder) {
         if (typeof folder !== 'undefined') {
             if (path == '~') {
@@ -380,6 +382,13 @@ var processor = {
         ga('send', 'event', 'resume', path);
     }
 }
+
+
+
+
+
+
+
 jQuery(document).ready(function($) {
     keyboardeventKeyPolyfill.polyfill();
     var id = 1;
