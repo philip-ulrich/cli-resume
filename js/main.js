@@ -104,7 +104,10 @@ function getKeys(obj, val) {
     }
     return objects;
 }
-// Filesystem Structure
+
+/////////////////
+// File System //
+/////////////////
 latestPost().success(function (data) {
     window.latestPostDate = data['posts'][0]['updated_at'].substring(0,10);
     window.fileStructure =
@@ -112,51 +115,60 @@ latestPost().success(function (data) {
         {
             "name": "~",
             "date": "2017-03-24",
-            "type": "static",
+            "type": "folder",
+            "prnt": "~",
             "children":   [
                             {
                                 "name": ".extras",
                                 "date": "2017-03-24",
-                                "type": "static",
+                                "type": "folder",
+                                "prnt": "~",
                                 "children":   [
                                                 {
                                                     "name": "example-file1",
                                                     "date": "2017-03-24",
-                                                    "type": "file"
+                                                    "type": "file",
+                                                    "prnt": ".extras"
                                                 },
                                                 {
                                                     "name": "example-file2",
                                                     "date": "2017-03-24",
-                                                    "type": "file"
+                                                    "type": "file",
+                                                    "prnt": ".extras"
                                                 }
                                             ]
                             },
                             {
                                 "name": ".ssh",
                                 "date": "2017-03-24",
-                                "type": "static",
+                                "type": "folder",
+                                "prnt": "~",
                                 "children":   [
                                                 {
                                                     "name": "example-file3",
                                                     "date": "2017-03-24",
-                                                    "type": "file"
+                                                    "type": "file",
+                                                    "prnt": ".ssh"
                                                 },
                                                 {
                                                     "name": "example-file4",
                                                     "date": "2017-03-24",
-                                                    "type": "file"
+                                                    "type": "file",
+                                                    "prnt": ".ssh"
                                                 }
                                             ]
                             },
                             {
                                 "name": "blog",
                                 "date": window.latestPostDate,
-                                "type": "static",
+                                "type": "folder",
+                                "prnt": "~",
                                 "children":   [
                                                 {
                                                     "name": "posts",
                                                     "date": window.latestPostDate,
-                                                    "type": "dynamic",
+                                                    "type": "folder",
+                                                    "prnt": "blog",
                                                     "children":     [
                                                                         {
                                                                             "name": "blog-post",
@@ -168,7 +180,8 @@ latestPost().success(function (data) {
                                                 {
                                                     "name": "tags",
                                                     "date": window.latestPostDate,
-                                                    "type": "dynamic",
+                                                    "type": "folder",
+                                                    "prnt": "blog",
                                                     "children":     [
                                                                         {
                                                                             "name": "blog-tag",
@@ -194,7 +207,7 @@ latestPost().success(function (data) {
                         ]
         }
     ]
-}); //TODO
+});
 
 ///////////////
 // Variables //
@@ -206,7 +219,8 @@ var termGroup= 'nginx';                     // Terminal Group
 var dirPerms = 'drwxr-xr-x.';               // Folder Permissions
 var filePerms= '-rwxr--r--.';               // File Permissions
 var termHost = termUser + '@exec.tech';     // Terminal Hostname
-var dirColor = '[[b;#0225c7;]'
+var dirColor = '[[b;#0225c7;]'              // Color Of Dir In ls
+var isPause  = false;
 var termDir  = dirPerms + " " + termOwner + " " + termGroup + " {x} " + dirColor;
 var termFile = filePerms + " " + termOwner + " " + termGroup + " {x} ";
 var title    =  "// This site is currently under construction. Don't mind the mess.\n\n\n" +
@@ -244,7 +258,7 @@ var processor = {
         if (typeof text !== 'undefined') {
             this.echo(text);
         } else {
-            this.echo(""); //TODO
+            this.echo("usage: echo [text]");
         }
         ga('send', 'event', 'echo', path + ' ' + isDefined(text));
     },
@@ -305,81 +319,62 @@ var processor = {
             }
         } else if (options == '--help') {
             this.echo("usage: ls [-al]");
-            return;
         } else {
             this.echo("ls: invalid option -- " + options + "\n" +
                       "Try 'ls --help' for more information");
-            return;
         }
         this.echo(list);
         ga('send', 'event', 'ls', path + ' ' + isDefined(options));
     },
-/////   TODO \/   ///////////////////////////////////////////////////////////////////////////////
     cd: function(folder) {
+        // cd should understand relative location better...
         if (typeof folder !== 'undefined') {
-            if (path == '~') {
-                if (folder == 'blog') {
-                    path = 'blog';
-                } else {
-                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-                }
-            }
-            else if (path == 'blog') {
-                if (folder == 'posts') {
-                    path = 'posts';
-                } else {
-                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-                }
+            folderContent = getObjects(window.fileStructure,'name',folder);
+            if (folderContent['length'] > 0 && folderContent[0]['type'] == 'folder') {
+                path = folder;
+            } else if (folderContent['length'] > 0 && folderContent[0]['type'] == 'file') {
+                this.echo(errText("-bash: cd: '" + folder + "': Not a directory"));
+            } else if (folder == '.') {
+                path = path;
+            } else if (folder == '..' || folder == '../') {
+                parentFolder = getObjects(window.fileStructure,'name',path);
+                path = parentFolder[0]['prnt'];
+            } else {
+                this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
             }
         } else {
-            this.echo("this shall be an error"); // TODO
+            path = '~';
         }
         ga('send', 'event', 'cd', path + ' ' + isDefined(folder));
     },
-     // cat case
     cat: function(file) {
         if (typeof file !== 'undefined') {
-            /*if (path == '~') {
-                if (folder == 'blog') {
-                    path = 'blog';
-                } else {
-                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-                }
-            }
-            if (path == 'blog') {
-                if (folder == 'posts') {
-                    path = 'posts';
-                } else {
-                    this.echo(errText("-bash: cd: '" + folder + "': No such file or directory"));
-                }
-            }*/
+            fileContent = getObjects(window.fileStructure,'name',file);
+            that = this;
             if (path == 'posts') {
-                post = getPost(file);
-                if (post == false) {
-                    this.echo("post not found");
-                } else {
-                    this.clear();
-                    this.pause();
-                    this.echo(post.html,{raw:true});
+                getPost(file).success(function (data) {
+                    that.clear();
+                    isPause = true;
+                    that.echo(errText('Press ctrl-d to exit'));
+                    that.echo(data['posts'][0]['html'],{raw:true});
                     setTimeout(function() {
                         window.scrollTo(0,0);
-                    }, (100));
-                }
+                    }, (500));
+                });
+                getPost(file).fail(function (data) {
+                    that.echo(errText("-bash: cat: '" + file + "': No such file."));
+                    that.resume();
+                });
+                this.pause();
+            } else if (fileContent['length'] > 0 && fileContent[0]['type'] == 'file') {
+                this.echo(fileContent[0]['content']);
             } else {
-                // This could be the way cat actually works..
-                // but lets just display an error for now
-                this.echo("this shall be an error"); // TODO
+                this.echo(errText("-bash: cat: '" + file + "': No such file."));
             }
+        } else {
+            this.echo("usage: cat [filename]");
         }
         ga('send', 'event', 'cat', path + ' ' + isDefined(file));
-    },
-    // resume case
-    resume: function() {
-        term.echo('You will now be directed to my resume. Please wait...')
-        setTimeout(function() {
-            window.location = "https://resume.exec.tech";
-        }, (3 * 1000));
-        ga('send', 'event', 'resume', path);
     }
 }
 
@@ -406,6 +401,12 @@ jQuery(document).ready(function($) {
         convertLinks: false,
         onBlur: function() {
             return false;
+        },
+        onResume: function() {
+            if (isPause) {
+                isPause = false;
+                this.reset();
+            }
         }
     });
 });
